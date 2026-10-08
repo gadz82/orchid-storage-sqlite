@@ -19,4 +19,3 @@
   auto-registered via the `orchid.visibility_fragments` entry-point group.
 - Async SQLite LangGraph checkpointer, auto-registered as the `sqlite`
   type via the `orchid.checkpointers` entry-point group.
-
