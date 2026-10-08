@@ -1,6 +1,6 @@
 # orchid-storage-sqlite
 
-SQLite storage backend plugin for the [Orchid AI](https://github.com/gadz82/orchid) framework.
+SQLite storage backend package for the [Orchid AI](https://github.com/gadz82/orchid) framework.
 
 ## What it provides
 
