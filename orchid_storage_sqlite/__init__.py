@@ -37,7 +37,7 @@ from __future__ import annotations
 
 import logging
 
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 
 from .chat_storage import OrchidSQLiteChatStorage
 from .config_storage import OrchidSQLiteConfigStorage
