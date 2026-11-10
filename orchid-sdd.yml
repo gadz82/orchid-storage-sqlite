@@ -1,0 +1,13 @@
+# orchid-sdd workspace repo override.
+# The workspace root owns knowledge, state, manifest, and audit.
+extends: "../../orchid-sdd.yml"
+
+project:
+  name: "orchid-storage-sqlite"
+  profile: backend
+
+execution:
+  test_commands:
+    unit: "../../.venv/bin/python -m pytest tests/ -x"
+    integration: "../../.venv/bin/python -m pytest tests/ -x -m integration"
+    e2e: "../../.venv/bin/python -m pytest tests/ -x -m e2e"
