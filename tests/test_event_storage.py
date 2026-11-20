@@ -9,6 +9,7 @@ contract on jobs, and the schedule store's ``record_fire`` updates.
 from __future__ import annotations
 
 import datetime as _dt
+import json
 import uuid as _uuid
 
 import pytest
@@ -20,7 +21,7 @@ from orchid_ai.core.events.store import (
     OrchidTriggerRecord,
 )
 
-from orchid_storage_sqlite.event_storage import SQLiteEventStorage
+from orchid_storage_sqlite.event_storage import SQLiteEventStorage, _row_to_run
 
 # ── Fixtures ────────────────────────────────────────────────
 
@@ -158,6 +159,82 @@ async def test_job_insert_and_get(storage) -> None:
     assert fetched.spec.trigger_id == "t1"
     assert fetched.spec.parallelism_key == "sa:t-1:digest-bot"
     assert fetched.status == JobStatus.PENDING
+
+
+async def test_job_pipeline_spec_round_trip(storage) -> None:
+    spec = JobSpec(
+        trigger_id="t-pipe",
+        signal_id=_uuid.uuid4(),
+        agent_name="",
+        prompt="",
+        identity_claim={"mode": "service_account", "name": "digest-bot"},
+        correlation_id="corr",
+        parallelism_key="sa:t-1:digest-bot",
+        visibility="admin",
+        visibility_user_id=None,
+        chat_binding={"chat_id": "C-1", "on_failure": "silent"},
+        proactive_chat=True,
+        target="pipeline",
+        pipeline_name="weekly_digest",
+        pipeline_input={"topic": "release notes", "limit": 3},
+        persist_graph=True,
+    )
+    run = JobRun(
+        run_id=_uuid.uuid4(),
+        spec=spec,
+        attempt_number=1,
+        status=JobStatus.PENDING,
+        queued_at=_dt.datetime.now(tz=_dt.UTC),
+    )
+    await _seed_signal_for_run(storage, run)
+    await storage.jobs.insert(run)
+
+    fetched = await storage.jobs.get(run.run_id)
+    assert fetched is not None
+    assert fetched.spec.target == "pipeline"
+    assert fetched.spec.pipeline_name == "weekly_digest"
+    assert fetched.spec.pipeline_input == {"topic": "release notes", "limit": 3}
+    assert fetched.spec.persist_graph is True
+    assert fetched.spec.proactive_chat is True
+    assert fetched.spec.chat_binding == {"chat_id": "C-1", "on_failure": "silent"}
+
+
+def test_old_job_row_defaults_to_agent_target() -> None:
+    now = _dt.datetime.now(tz=_dt.UTC)
+    row = {
+        "spec": json.dumps(
+            {
+                "trigger_id": "t1",
+                "signal_id": str(_uuid.uuid4()),
+                "agent_name": "a",
+                "prompt": "p",
+                "identity_claim": {"mode": "service_account", "name": "bot"},
+                "correlation_id": None,
+                "parallelism_key": "sa:t:bot",
+                "visibility": "admin",
+                "visibility_user_id": None,
+                "chat_binding": None,
+            }
+        ),
+        "run_id": str(_uuid.uuid4()),
+        "attempt_number": 1,
+        "status": JobStatus.PENDING.value,
+        "queued_at": now.isoformat(),
+        "started_at": None,
+        "finished_at": None,
+        "result": None,
+        "error": None,
+        "next_retry_at": None,
+        "metadata": None,
+        "visibility": "admin",
+        "visibility_user_id": None,
+    }
+    run = _row_to_run(row)
+    assert run.spec.target == "agent"
+    assert run.spec.pipeline_name is None
+    assert run.spec.pipeline_input is None
+    assert run.spec.persist_graph is False
+    assert run.spec.proactive_chat is False
 
 
 async def test_job_unique_constraint_returns_existing(storage) -> None:

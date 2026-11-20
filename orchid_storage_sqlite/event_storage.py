@@ -569,6 +569,11 @@ def _row_to_run(row: aiosqlite.Row) -> JobRun:
         visibility=spec_dict.get("visibility", row["visibility"]),
         visibility_user_id=spec_dict.get("visibility_user_id", row["visibility_user_id"]),
         chat_binding=spec_dict.get("chat_binding"),
+        proactive_chat=bool(spec_dict.get("proactive_chat", False)),
+        target=spec_dict.get("target", "agent"),
+        pipeline_name=spec_dict.get("pipeline_name"),
+        pipeline_input=spec_dict.get("pipeline_input"),
+        persist_graph=bool(spec_dict.get("persist_graph", False)),
     )
     return JobRun(
         run_id=_uuid.UUID(row["run_id"]),
@@ -608,6 +613,7 @@ def _row_to_trigger(row: aiosqlite.Row) -> OrchidTriggerRecord:
     )
 
 
+# ORCHID-MEM: 01a1f342-9de7-78ff-b805-d5bf383153a5 — Job spec persistence; every field is serialized and old rows default to the agent target.
 def _jobspec_to_dict(spec: JobSpec) -> dict[str, Any]:
     return {
         "trigger_id": spec.trigger_id,
@@ -620,4 +626,9 @@ def _jobspec_to_dict(spec: JobSpec) -> dict[str, Any]:
         "visibility": spec.visibility,
         "visibility_user_id": spec.visibility_user_id,
         "chat_binding": spec.chat_binding,
+        "proactive_chat": spec.proactive_chat,
+        "target": spec.target,
+        "pipeline_name": spec.pipeline_name,
+        "pipeline_input": spec.pipeline_input,
+        "persist_graph": spec.persist_graph,
     }
